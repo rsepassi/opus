@@ -219,6 +219,12 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
         && application != OPUS_APPLICATION_RESTRICTED_CELT))
         return OPUS_BAD_ARG;
 
+#ifdef DISABLE_STEREO
+    /* Stereo support disabled, only allow mono */
+    if (channels != 1)
+        return OPUS_BAD_ARG;
+#endif
+
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes, channels );
     if (ret)
