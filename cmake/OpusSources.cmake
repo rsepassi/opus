@@ -23,10 +23,14 @@ get_opus_sources(SILK_SOURCES_FIXED_ARM_NEON_INTR silk_sources.mk
 
 get_opus_sources(OPUS_HEAD opus_headers.mk opus_headers)
 get_opus_sources(OPUS_SOURCES opus_sources.mk opus_sources)
+get_opus_sources(OPUS_SOURCES_CORE opus_sources.mk opus_sources_core)
+get_opus_sources(OPUS_SOURCES_MULTISTREAM opus_sources.mk opus_sources_multistream)
 get_opus_sources(OPUS_SOURCES_FLOAT opus_sources.mk opus_sources_float)
 
 get_opus_sources(CELT_HEAD celt_headers.mk celt_headers)
 get_opus_sources(CELT_SOURCES celt_sources.mk celt_sources)
+get_opus_sources(CELT_SOURCES_SILK_REQUIRED celt_sources.mk celt_sources_silk_required)
+get_opus_sources(CELT_SOURCES_CODEC celt_sources.mk celt_sources_codec)
 get_opus_sources(CELT_SOURCES_X86_RTCD celt_sources.mk celt_sources_x86_rtcd)
 get_opus_sources(CELT_SOURCES_SSE celt_sources.mk celt_sources_sse)
 get_opus_sources(CELT_SOURCES_SSE2 celt_sources.mk celt_sources_sse2)

@@ -1,4 +1,9 @@
-opus_sources = sources['OPUS_SOURCES']
+# For SILK-only builds, use only the core OPUS sources (no multistream)
+if opt_silk_only
+  opus_sources = sources['OPUS_SOURCES_CORE']
+else
+  opus_sources = sources['OPUS_SOURCES']
+endif
 
 opus_sources_float = sources['OPUS_SOURCES_FLOAT']
 

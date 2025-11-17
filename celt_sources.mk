@@ -1,15 +1,24 @@
-CELT_SOURCES = \
+# Sources required by SILK (entropy coder and utilities)
+# Note: pitch.c and celt_lpc.c are needed by SILK fixed-point implementation
+# celt_fatal.c provides celt_fatal() for assertion/hardening support
+CELT_SOURCES_SILK_REQUIRED = \
+celt/entcode.c \
+celt/entdec.c \
+celt/entenc.c \
+celt/mathops.c \
+celt/pitch.c \
+celt/celt_lpc.c \
+celt/celt_fatal.c
+
+# CELT-only sources (excluded in SILK-only builds)
+CELT_SOURCES_CODEC = \
 celt/bands.c \
 celt/celt.c \
 celt/celt_encoder.c \
 celt/celt_decoder.c \
 celt/cwrs.c \
-celt/entcode.c \
-celt/entdec.c \
-celt/entenc.c \
 celt/kiss_fft.c \
 celt/laplace.c \
-celt/mathops.c \
 celt/mdct.c \
 celt/modes.c \
 celt/pitch.c \
@@ -17,6 +26,9 @@ celt/celt_lpc.c \
 celt/quant_bands.c \
 celt/rate.c \
 celt/vq.c
+
+# Base CELT sources (will be extended based on build configuration)
+CELT_SOURCES = $(CELT_SOURCES_SILK_REQUIRED)
 
 CELT_SOURCES_X86_RTCD = \
 celt/x86/x86cpu.c \

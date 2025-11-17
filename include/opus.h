@@ -40,6 +40,13 @@
 extern "C" {
 #endif
 
+/** Indicates SILK-only build (no CELT codec) */
+#ifdef ENABLE_SILK_ONLY
+# define OPUS_BUILD_SILK_ONLY 1
+#else
+# define OPUS_BUILD_SILK_ONLY 0
+#endif
+
 /**
  * @mainpage Opus
  *

@@ -128,7 +128,11 @@ int opus_decoder_get_size(int channels)
    if(ret)
       return 0;
    silkDecSizeBytes = align(silkDecSizeBytes);
+#ifndef ENABLE_SILK_ONLY
    celtDecSizeBytes = celt_decoder_get_size(channels);
+#else
+   celtDecSizeBytes = 0;
+#endif
    return align(sizeof(OpusDecoder))+silkDecSizeBytes+celtDecSizeBytes;
 }
 
@@ -168,11 +172,13 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    ret = silk_InitDecoder( silk_dec );
    if(ret)return OPUS_INTERNAL_ERROR;
 
+#ifndef ENABLE_SILK_ONLY
    /* Initialize CELT decoder */
    ret = celt_decoder_init(celt_dec, Fs, channels);
    if(ret!=OPUS_OK)return OPUS_INTERNAL_ERROR;
 
    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
+#endif
 
    st->prev_mode = 0;
    st->frame_size = Fs/400;
@@ -575,6 +581,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    ALLOC(redundant_audio, redundant_audio_size, opus_res);
 
    /* 5 ms redundant frame for CELT->SILK*/
+#ifndef ENABLE_SILK_ONLY
    if (redundancy && celt_to_silk)
    {
       /* If the previous frame did not use CELT (the first redundancy frame in
@@ -590,7 +597,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
    /* MUST be after PLC */
    MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band)));
+#endif
 
+#ifndef ENABLE_SILK_ONLY
 #ifdef ENABLE_OSCE_BWE
    if (mode != MODE_SILK_ONLY && st->DecControl.osce_extended_mode != OSCE_MODE_SILK_BBWE)
 #else
@@ -609,7 +618,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 #endif
                                      ARG_QEXT(ext ? ext->data : NULL) ARG_QEXT(ext ? ext->len : 0));
       celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&st->rangeFinal));
-   } else {
+   } else
+#endif /* ENABLE_SILK_ONLY */
+   {
+#ifndef ENABLE_SILK_ONLY
       unsigned char silence[2] = {0xFF, 0xFF};
       if (!celt_accum)
       {
@@ -623,9 +635,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0)));
          celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL, celt_accum);
       }
+#endif
       st->rangeFinal = dec.rng;
    }
 
+#ifndef ENABLE_SILK_ONLY
    {
       const CELTMode *celt_mode;
       MUST_SUCCEED(celt_decoder_ctl(celt_dec, CELT_GET_MODE(&celt_mode)));
@@ -643,6 +657,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
                   pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
    }
+#endif
    /* 5ms redundant frame for CELT->SILK; ignore if the previous frame did not
       use CELT (the first redundancy frame in a transition from SILK may have
       been lost) */
@@ -1112,7 +1127,9 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
             sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
 
+#ifndef ENABLE_SILK_ONLY
       celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
+#endif
       silk_ResetDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
