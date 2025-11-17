@@ -177,13 +177,36 @@ foreach opt : feat
   set_variable('opt_' + opt[0].underscorify(), opt_foo)
 endforeach
 
+# Handle SILK-only build option
+opt_silk_only = get_option('silk-only')
+if opt_silk_only
+  # Force fixed-point, disable float API, intrinsics, and rtcd for SILK-only builds
+  if not opt_fixed_point
+    message('SILK-only build: forcing fixed-point')
+    opt_fixed_point = true
+    opus_conf.set('FIXED_POINT', 1)
+  endif
+  opus_conf.set('ENABLE_SILK_ONLY', 1)
+  message('SILK-only build: disabling float API, intrinsics, and rtcd')
+endif
+
 opt_asm = get_option('asm')
 opt_rtcd = get_option('rtcd')
 opt_intrinsics = get_option('intrinsics')
 extra_programs = get_option('extra-programs')
 opt_tests = get_option('tests')
 
-disable_float_api = not get_option('float-api')
+# Override rtcd and intrinsics for SILK-only builds
+if opt_silk_only
+  if not opt_rtcd.disabled()
+    message('SILK-only build: overriding rtcd to disabled')
+  endif
+  if not opt_intrinsics.disabled()
+    message('SILK-only build: overriding intrinsics to disabled')
+  endif
+endif
+
+disable_float_api = opt_silk_only or not get_option('float-api')
 if disable_float_api
   opus_conf.set('DISABLE_FLOAT_API', 1)
 endif
@@ -212,7 +235,7 @@ rtcd_support = []
 # we must always assume that we only 'may have' it.
 opus_can_presume_simd = true
 if cc.get_argument_syntax() == 'msvc'
-  if opt_rtcd.disabled()
+  if opt_rtcd.disabled() or opt_silk_only
     warning('Building with an MSVC-like compiler and runtime CPU detection is disabled. Outputs may not run on all @0@ CPUs.'.format(host_cpu_family))
   else
     opus_can_presume_simd = false
@@ -296,7 +319,7 @@ if not opt_asm.disabled()
       opus_arm_may_have_dotprod = opus_conf.has('OPUS_ARM_INLINE_DOTPROD')
       opus_arm_presume_dotprod = opus_arm_may_have_dotprod and opus_can_presume_simd
 
-      if not opt_rtcd.disabled()
+      if not opt_rtcd.disabled() and not opt_silk_only
         if not opus_arm_may_have_edsp
           message('Trying to force-enable armv5e EDSP instructions...')
           # AS_ASM_ARM_EDSP_FORCE
@@ -387,7 +410,7 @@ have_neon_intr = false
 have_dotprod_intr = false
 
 intrinsics_support = []
-if not opt_intrinsics.disabled()
+if not opt_intrinsics.disabled() and not opt_silk_only
   if host_cpu_family in ['arm', 'aarch64']
     # Check for ARMv7/AArch64 neon intrinsics
     intrin_check = '''
@@ -550,7 +573,7 @@ if not opt_intrinsics.disabled()
       endif
     endforeach
 
-    if not opt_rtcd.disabled()
+    if not opt_rtcd.disabled() and not opt_silk_only
       get_cpuid_by_asm = false
       cpuid_asm_code = '''
         #include <stdio.h>
@@ -628,7 +651,7 @@ if opt_intrinsics.enabled() and intrinsics_support.length() == 0
   error('intrinsics option was enabled, but none were detected')
 endif
 
-if opt_rtcd.disabled()
+if opt_rtcd.disabled() or opt_silk_only
   rtcd_support = 'disabled'
 else
   if rtcd_support.length() > 0

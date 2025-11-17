@@ -3,6 +3,7 @@ option('fixed-point', type : 'boolean', value : false, description : 'Compile wi
 option('fixed-point-debug', type : 'boolean', value : false, description : 'Debug fixed-point implementation')
 option('float-api', type : 'boolean', value : true, description : 'Compile with or without the floating point API (for machines with no float library')
 option('float-approx', type : 'boolean', value : false, description : 'Enable fast approximations for floating point (not supported on all platforms)')
+option('silk-only', type : 'boolean', value : false, description : 'Build SILK speech codec only, excluding CELT (implies fixed-point, no float API, no intrinsics, no rtcd)')
 option('rtcd', type : 'feature', value : 'auto', description : 'Run-time CPU capabilities detection')
 option('asm', type : 'feature', value : 'auto', description : 'Assembly optimizations for ARM (fixed-point)')
 option('intrinsics', type : 'feature', value : 'auto', description : 'Intrinsics optimizations for ARM NEON or x86')

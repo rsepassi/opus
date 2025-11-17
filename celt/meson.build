@@ -1,4 +1,9 @@
-celt_sources = sources['CELT_SOURCES']
+# For SILK-only builds, use only the minimal CELT sources required by SILK
+if opt_silk_only
+  celt_sources = sources['CELT_SOURCES_SILK_REQUIRED']
+else
+  celt_sources = sources['CELT_SOURCES']
+endif
 
 celt_sse_sources = sources['CELT_SOURCES_SSE']
 

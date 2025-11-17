@@ -31,6 +31,8 @@
 
 #define ANALYSIS_C
 
+#ifndef ENABLE_SILK_ONLY
+
 #ifdef MLP_TRAINING
 #include <stdio.h>
 #endif
@@ -980,3 +982,5 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
 }
 
 #endif /* DISABLE_FLOAT_API */
+
+#endif /* ENABLE_SILK_ONLY */

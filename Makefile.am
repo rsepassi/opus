@@ -52,6 +52,16 @@ else
 OPUS_SOURCES += $(OPUS_SOURCES_FLOAT)
 endif
 
+# For SILK-only builds, exclude CELT codec and use only required entropy coder
+# In non-SILK-only builds, add the full CELT codec sources
+if ENABLE_SILK_ONLY
+# CELT_SOURCES and OPUS_SOURCES already contain the minimal sets from the .mk files
+# We just need to make sure we don't add the CODEC sources
+else
+CELT_SOURCES += $(CELT_SOURCES_CODEC)
+OPUS_SOURCES += $(OPUS_SOURCES_MULTISTREAM)
+endif
+
 if CPU_X86
 if HAVE_RTCD
 CELT_SOURCES += $(CELT_SOURCES_X86_RTCD)

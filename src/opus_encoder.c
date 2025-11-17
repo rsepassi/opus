@@ -226,8 +226,10 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     silkEncSizeBytes = align(silkEncSizeBytes);
     if (application == OPUS_APPLICATION_RESTRICTED_CELT)
         silkEncSizeBytes = 0;
+#ifndef ENABLE_SILK_ONLY
     if (application != OPUS_APPLICATION_RESTRICTED_SILK)
         celtEncSizeBytes = celt_encoder_get_size(channels);
+#endif
     tot_size = align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
     if (st == NULL) {
         return tot_size;
@@ -268,6 +270,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
+#ifndef ENABLE_SILK_ONLY
     if (application != OPUS_APPLICATION_RESTRICTED_SILK)
     {
        celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
@@ -276,6 +279,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
        celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
        celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(st->silk_mode.complexity));
     }
+#endif
 
 #ifdef ENABLE_DRED
     /* Initialize DRED Encoder */
@@ -306,10 +310,15 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->prev_HB_gain = Q15ONE;
     st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     st->first = 1;
+#ifdef ENABLE_SILK_ONLY
+    st->mode = MODE_SILK_ONLY;
+    st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+#else
     st->mode = MODE_HYBRID;
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
+#endif
 
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
     tonality_analysis_init(&st->analysis, st->Fs);
     st->analysis.application = st->application;
 #endif
@@ -1221,7 +1230,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
         celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
     is_silence = is_digital_silence(pcm, frame_size, st->channels, lsb_depth);
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
     analysis_info.valid = 0;
 #ifdef FIXED_POINT
     if (st->silk_mode.complexity >= 10 && st->Fs>=16000 && st->Fs<=48000 && st->application != OPUS_APPLICATION_RESTRICTED_SILK)
@@ -1238,7 +1247,8 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
     } else if (st->analysis.initialized) {
        tonality_analysis_reset(&st->analysis);
     }
-#else
+#endif
+#ifdef DISABLE_FLOAT_API
     (void)analysis_pcm;
     (void)analysis_size;
     (void)c1;
@@ -1251,7 +1261,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
      * Otherwise, preserve voice_ratio from the last non-silent frame */
     if (!is_silence)
       st->voice_ratio = -1;
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
     st->detected_bandwidth = 0;
     if (analysis_info.valid)
     {
@@ -1285,7 +1295,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 #endif
 
     /* Track the peak signal energy */
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
     if (!analysis_info.valid || analysis_info.activity_probability > DTX_ACTIVITY_THRESHOLD)
 #endif
     {
@@ -1437,7 +1447,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
 
     /* Allow SILK DTX if DTX is enabled but the generalized DTX cannot be used,
        e.g. because of the complexity setting or sample rate. */
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
     st->silk_mode.useDTX = st->use_dtx && !(analysis_info.valid || is_silence);
 #else
     st->silk_mode.useDTX = st->use_dtx && !is_silence;
@@ -1712,7 +1722,7 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
           st->analysis.read_pos = analysis_read_pos_bak;
           st->analysis.read_subframe = analysis_read_subframe_bak;
        }
-#endif
+#endif /* !DISABLE_FLOAT_API && !ENABLE_SILK_ONLY */
 
        /* Worst cases:
         * 2 frames: Code 2 with different compressed sizes
@@ -2402,6 +2412,7 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
     }
 
     /* 5 ms redundant frame for CELT->SILK */
+#ifndef ENABLE_SILK_ONLY
     if (redundancy && celt_to_silk)
     {
         int err;
@@ -2490,6 +2501,12 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
 
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
+#else
+   st->rangeFinal = enc.rng;
+   (void)redundancy; /* Suppress unused variable warning */
+   (void)celt_to_silk;
+   if (0) /* Wrap remaining CELT-only code */
+#endif
     {
         int err;
         unsigned char dummy[2];
@@ -2520,8 +2537,6 @@ static opus_int32 opus_encode_frame_native(OpusEncoder *st, const opus_res *pcm,
         }
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
     }
-
-
 
     /* Signalling the mode in the first byte */
     data--;
@@ -2776,7 +2791,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                break;
             }
             st->application = value;
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
             st->analysis.application = value;
 #endif
         }
@@ -3223,15 +3238,17 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            silk_EncControlStruct dummy;
            char *start;
            silk_enc = (char*)st+st->silk_enc_offset;
-#ifndef DISABLE_FLOAT_API
+#if !defined(DISABLE_FLOAT_API) && !defined(ENABLE_SILK_ONLY)
            tonality_analysis_reset(&st->analysis);
 #endif
 
            start = (char*)&st->OPUS_ENCODER_RESET_START;
            OPUS_CLEAR(start, sizeof(OpusEncoder) - (start - (char*)st));
 
+#ifndef ENABLE_SILK_ONLY
            if (st->application != OPUS_APPLICATION_RESTRICTED_SILK)
               celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
+#endif
            if (st->application != OPUS_APPLICATION_RESTRICTED_CELT)
               silk_InitEncoder( silk_enc, st->channels, st->arch, &dummy );
 #ifdef ENABLE_DRED

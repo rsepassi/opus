@@ -28,6 +28,8 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#ifndef ENABLE_SILK_ONLY
+
 #include "celt.h"
 #include "opus_private.h"
 #include "mlp.h"
@@ -100,4 +102,6 @@ void run_analysis(TonalityAnalysisState *analysis, const CELTMode *celt_mode, co
                  int analysis_frame_size, int frame_size, int c1, int c2, int C, opus_int32 Fs,
                  int lsb_depth, downmix_func downmix, AnalysisInfo *analysis_info);
 
-#endif
+#endif /* ENABLE_SILK_ONLY */
+
+#endif /* ANALYSIS_H */

@@ -116,6 +116,28 @@ AS_IF([test "$has_var_arrays" = "no"],
 
 LT_LIB_M
 
+AC_ARG_ENABLE([silk-only],
+    [AS_HELP_STRING([--enable-silk-only],
+                    [build SILK speech codec only, excluding CELT (implies fixed-point, no float API, no intrinsics, no rtcd)])],,
+    [enable_silk_only=no])
+
+AS_IF([test "$enable_silk_only" = "yes"],[
+  AC_DEFINE([ENABLE_SILK_ONLY], [1], [Build SILK-only, excluding CELT])
+  # Automatically enable fixed-point and disable float API, intrinsics, and rtcd
+  enable_fixed_point=yes
+  enable_float_api=no
+  enable_intrinsics=no
+  enable_rtcd=no
+  enable_float="no"
+  # Also set the corresponding AC_DEFINE macros
+  AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point (for machines without a fast enough FPU)])
+  AC_DEFINE([DISABLE_FLOAT_API], [1], [Do not build the float API])
+  PC_BUILD="fixed-point (SILK-only)"
+  AC_MSG_NOTICE([SILK-only build: forcing fixed-point, disabling float API, intrinsics, and rtcd])
+])
+
+AM_CONDITIONAL([ENABLE_SILK_ONLY], [test "$enable_silk_only" = "yes"])
+
 AC_ARG_ENABLE([fixed-point],
     [AS_HELP_STRING([--enable-fixed-point],
                     [compile without floating point (for machines without a fast enough FPU)])],,

@@ -99,6 +99,17 @@ set(OPUS_OSCE_HELP_STR "enable OSCE.")
 option(OPUS_OSCE ${OPUS_OSCE_HELP_STR} OFF)
 add_feature_info(OPUS_OSCE OPUS_OSCE ${OPUS_OSCE_HELP_STR})
 
+set(OPUS_ENABLE_SILK_ONLY_HELP_STR "build SILK speech codec only, excluding CELT (implies fixed-point, no float API, no intrinsics, no rtcd).")
+option(OPUS_ENABLE_SILK_ONLY ${OPUS_ENABLE_SILK_ONLY_HELP_STR} OFF)
+add_feature_info(OPUS_ENABLE_SILK_ONLY OPUS_ENABLE_SILK_ONLY ${OPUS_ENABLE_SILK_ONLY_HELP_STR})
+
+if(OPUS_ENABLE_SILK_ONLY)
+  set(OPUS_FIXED_POINT ON CACHE BOOL "Forced by SILK-only build" FORCE)
+  set(OPUS_ENABLE_FLOAT_API OFF CACHE BOOL "Forced by SILK-only build" FORCE)
+  set(OPUS_DISABLE_INTRINSICS ON CACHE BOOL "Forced by SILK-only build" FORCE)
+  message(STATUS "SILK-only build: forcing fixed-point, disabling float API and intrinsics")
+endif()
+
 if(APPLE)
   set(OPUS_BUILD_FRAMEWORK_HELP_STR "build Framework bundle for Apple systems.")
   option(OPUS_BUILD_FRAMEWORK ${OPUS_BUILD_FRAMEWORK_HELP_STR} OFF)
@@ -287,6 +298,14 @@ if(MSVC)
   endif()
 endif()
 
+# For SILK-only builds, use only the minimal required sources
+if(OPUS_ENABLE_SILK_ONLY)
+  # Use only SILK-required CELT sources and core OPUS sources
+  set(opus_sources ${OPUS_SOURCES_CORE})
+  set(celt_sources ${CELT_SOURCES_SILK_REQUIRED})
+  message(STATUS "SILK-only build: using minimal source set")
+endif()
+
 add_library(opus ${opus_headers} ${opus_sources} ${opus_sources_float} ${Opus_PUBLIC_HEADER})
 add_library(Opus::opus ALIAS opus)
 
@@ -314,6 +333,10 @@ target_include_directories(
 
 target_link_libraries(opus PRIVATE ${OPUS_REQUIRED_LIBRARIES})
 target_compile_definitions(opus PRIVATE OPUS_BUILD)
+
+if(OPUS_ENABLE_SILK_ONLY)
+  target_compile_definitions(opus PRIVATE ENABLE_SILK_ONLY)
+endif()
 
 if(OPUS_FIXED_POINT_DEBUG)
   target_compile_definitions(opus PRIVATE FIXED_DEBUG)
