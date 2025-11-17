@@ -1,3 +1,4 @@
+# Core SILK sources (mono + stereo base)
 SILK_SOURCES = \
 silk/CNG.c \
 silk/code_signs.c \
@@ -37,8 +38,6 @@ silk/NLSF_VQ.c \
 silk/NLSF_unpack.c \
 silk/NLSF_del_dec_quant.c \
 silk/process_NLSFs.c \
-silk/stereo_LR_to_MS.c \
-silk/stereo_MS_to_LR.c \
 silk/check_control_input.c \
 silk/control_SNR.c \
 silk/init_encoder.c \
@@ -71,11 +70,20 @@ silk/resampler_rom.c \
 silk/sigm_Q15.c \
 silk/sort.c \
 silk/sum_sqr_shift.c \
+silk/LPC_fit.c
+
+# Stereo-specific sources (excluded with --disable-stereo)
+SILK_SOURCES_STEREO = \
+silk/stereo_LR_to_MS.c \
+silk/stereo_MS_to_LR.c \
 silk/stereo_decode_pred.c \
 silk/stereo_encode_pred.c \
 silk/stereo_find_predictor.c \
-silk/stereo_quant_pred.c \
-silk/LPC_fit.c
+silk/stereo_quant_pred.c
+
+# Stereo stubs (used when stereo is disabled)
+SILK_SOURCES_STEREO_STUBS = \
+silk/stereo_stubs.c
 
 SILK_SOURCES_X86_RTCD = \
 silk/x86/x86_silk_map.c

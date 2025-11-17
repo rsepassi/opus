@@ -150,6 +150,12 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
     || (channels!=1&&channels!=2))
       return OPUS_BAD_ARG;
 
+#ifdef DISABLE_STEREO
+   /* Stereo support disabled, only allow mono */
+   if (channels != 1)
+      return OPUS_BAD_ARG;
+#endif
+
    OPUS_CLEAR((char*)st, opus_decoder_get_size(channels));
    /* Initialize SILK decoder */
    ret = silk_Get_Decoder_Size(&silkDecSizeBytes);

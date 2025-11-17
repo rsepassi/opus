@@ -47,6 +47,14 @@ SILK_SOURCES += $(SILK_SOURCES_FLOAT_AVX2)
 endif
 endif
 
+# Add stereo support unless --disable-stereo is used
+if DISABLE_STEREO
+# Building mono-only, use stereo stubs instead of real implementation
+SILK_SOURCES += $(SILK_SOURCES_STEREO_STUBS)
+else
+SILK_SOURCES += $(SILK_SOURCES_STEREO)
+endif
+
 if DISABLE_FLOAT_API
 else
 OPUS_SOURCES += $(OPUS_SOURCES_FLOAT)

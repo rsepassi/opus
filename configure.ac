@@ -138,6 +138,18 @@ AS_IF([test "$enable_silk_only" = "yes"],[
 
 AM_CONDITIONAL([ENABLE_SILK_ONLY], [test "$enable_silk_only" = "yes"])
 
+AC_ARG_ENABLE([stereo],
+    [AS_HELP_STRING([--disable-stereo],
+                    [disable stereo support (mono only, reduces binary size by ~8-10 KB)])],,
+    [enable_stereo=yes])
+
+AS_IF([test "$enable_stereo" = "no"],[
+  AC_DEFINE([DISABLE_STEREO], [1], [Build without stereo support (mono only)])
+  AC_MSG_NOTICE([Stereo support disabled: building mono-only])
+])
+
+AM_CONDITIONAL([DISABLE_STEREO], [test "$enable_stereo" = "no"])
+
 AC_ARG_ENABLE([fixed-point],
     [AS_HELP_STRING([--enable-fixed-point],
                     [compile without floating point (for machines without a fast enough FPU)])],,
