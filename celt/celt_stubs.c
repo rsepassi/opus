@@ -1,5 +1,5 @@
 /* Copyright (c) 2024 Opus contributors
-   Written for SILK-only builds */
+   Stub implementations for SILK-only builds */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -29,19 +29,53 @@
 #include "config.h"
 #endif
 
-/* Provide celt_fatal implementation for SILK-only builds */
-/* When building full Opus, celt.c provides this function via CELT_C in arch.h */
 #ifdef ENABLE_SILK_ONLY
-#include <stdio.h>
-#include <stdlib.h>
-#include "arch.h"
 
-void celt_fatal(const char *str, const char *file, int line)
+#include <stdarg.h>
+#include "celt.h"
+#include "opus_defines.h"
+
+/* Stub implementation of opus_custom_encoder_ctl for SILK-only builds */
+int opus_custom_encoder_ctl(CELTEncoder *OPUS_RESTRICT st, int request, ...)
 {
-   fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
-#if defined(_MSC_VER)
-   _set_abort_behavior( 0, _WRITE_ABORT_MSG);
-#endif
-   abort();
+   (void)st;
+   (void)request;
+   /* In SILK-only builds, CELT encoder doesn't exist, so all CTL calls are no-ops */
+   return OPUS_OK;
 }
-#endif
+
+/* Stub implementation of opus_custom_decoder_ctl for SILK-only builds */
+int opus_custom_decoder_ctl(CELTDecoder *OPUS_RESTRICT st, int request, ...)
+{
+   (void)st;
+   (void)request;
+   /* In SILK-only builds, CELT decoder doesn't exist, so all CTL calls are no-ops */
+   return OPUS_OK;
+}
+
+/* opus_strerror implementation for SILK-only builds */
+const char *opus_strerror(int error)
+{
+   static const char * const error_strings[8] = {
+      "success",
+      "invalid argument",
+      "buffer too small",
+      "internal error",
+      "corrupted stream",
+      "request not implemented",
+      "invalid state",
+      "memory allocation failed"
+   };
+   if (error > 0 || error < -7)
+      return "unknown error";
+   else
+      return error_strings[-error];
+}
+
+/* opus_get_version_string implementation for SILK-only builds */
+const char *opus_get_version_string(void)
+{
+   return "libopus SILK-only";
+}
+
+#endif /* ENABLE_SILK_ONLY */
